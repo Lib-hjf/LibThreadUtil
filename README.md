@@ -14,6 +14,6 @@ allprojects {
 
 ```
 dependencies {
-	
+	compile 'com.github.Lib-hjf:LibThreadUtil:0.1.0'
 }
 ```
