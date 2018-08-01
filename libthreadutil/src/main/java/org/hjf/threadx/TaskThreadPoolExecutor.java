@@ -2,7 +2,7 @@ package org.hjf.threadx;
 
 import android.support.annotation.NonNull;
 
-import org.hjf.liblogx.LogUtil;
+import org.hjf.util.log.LogUtil;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;

@@ -3,7 +3,7 @@ package org.hjf.threadx;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
-import org.hjf.liblogx.LogUtil;
+import org.hjf.util.log.LogUtil;
 
 import java.util.LinkedList;
 import java.util.List;
