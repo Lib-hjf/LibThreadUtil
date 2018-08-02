@@ -3,7 +3,7 @@ package org.hjf.threadx;
 import android.os.Handler;
 import android.os.Looper;
 
-import org.hjf.util.log.LogUtil;
+import org.hjf.log.LogUtil;
 
 /**
  * Task ，自定义的最小调度资源
