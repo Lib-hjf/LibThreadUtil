@@ -2,9 +2,6 @@ package org.hjf.thread;
 
 import android.support.annotation.IntDef;
 
-import org.hjf.threadx.LinkTask;
-import org.hjf.threadx.MeshTask;
-import org.hjf.threadx.Task;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -15,7 +12,7 @@ import static org.hjf.thread.RunnableFlag.WAIT;
 
 /**
  * 注解：RunnableFlag，
- * 任务组 {@link MeshTask} {@link LinkTask}等当 {@link Task#run()} 代码块执行完成后，下一步如何动作的标识.
+ * 任务组 {@link MeshTask} {@link LinkTask}等当 {@link RunPoint#run()} 代码块执行完成后，下一步如何动作的标识.
  */
 @IntDef({
         NEXT,

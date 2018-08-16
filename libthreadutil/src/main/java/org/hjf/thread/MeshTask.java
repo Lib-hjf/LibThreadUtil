@@ -4,7 +4,6 @@ import android.support.annotation.NonNull;
 import android.support.annotation.WorkerThread;
 
 import org.hjf.log.LogUtil;
-import org.hjf.threadx.Task;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -30,7 +29,7 @@ import java.util.List;
  * <p>
  * <p>
  * 支持：PointTask完成后自动销毁
- * 支持：失败重新运行，在 {@link Task#run()} 方法最后进行标记 {@link Task#setFlag(int)}
+ * 支持：失败重新运行，在 {@link RunPoint#run()} 方法最后进行标记 {@link RunPoint#setFlag(int)}
  * 支持：暂停、继续、取消等操作。 TODO -- 可以利用 allPointTask
  * 支持：网络任务断网保留，网络状态变化后重新拉取。 TODO -- 可以利用 allPointTask
  */
