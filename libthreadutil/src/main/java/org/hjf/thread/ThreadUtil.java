@@ -1,4 +1,4 @@
-package org.hjf.threadx;
+package org.hjf.thread;
 
 
 import android.app.ActivityManager;

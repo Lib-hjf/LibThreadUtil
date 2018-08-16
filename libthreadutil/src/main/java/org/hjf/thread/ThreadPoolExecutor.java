@@ -1,9 +1,10 @@
-package org.hjf.threadx;
+package org.hjf.thread;
 
 import android.support.annotation.NonNull;
 
 import org.hjf.log.LogUtil;
 
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
@@ -12,7 +13,6 @@ import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.RunnableFuture;
 import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -21,9 +21,9 @@ import java.util.concurrent.TimeUnit;
  * 使用线程池：可复用、减少创建销毁次数，减轻GC回收器压力，避免消耗过多内存，一个线程大约需要1MB；
  * 还可以控制并发数、执行定时等自定义要求
  */
-class TaskThreadPoolExecutor extends ThreadPoolExecutor {
+class ThreadPoolExecutor extends java.util.concurrent.ThreadPoolExecutor {
 
-    private static TaskThreadPoolExecutor pauseThreadPoolExecutor;
+    private static ThreadPoolExecutor threadPoolExecutor;
 
     /**
      * @param corePoolSize    核心线程数，即使空闲也存活。
@@ -49,17 +49,17 @@ class TaskThreadPoolExecutor extends ThreadPoolExecutor {
      * @param threadFactory   线程工厂，按需调整。比如设置为后台线程
      * @param handler         拒绝策略。在线程池已关闭的情况下，或人物太多导致最大线程数并且任务队列已饱和，会拒绝execute提交的任务，默认是抛出 RejectedExecutionHandler异常
      */
-    private TaskThreadPoolExecutor(int corePoolSize, int maximumPoolSize, long keepAliveTime, TimeUnit unit, BlockingQueue<Runnable> workQueue, ThreadFactory threadFactory, RejectedExecutionHandler handler) {
+    private ThreadPoolExecutor(int corePoolSize, int maximumPoolSize, long keepAliveTime, TimeUnit unit, BlockingQueue<Runnable> workQueue, ThreadFactory threadFactory, RejectedExecutionHandler handler) {
         super(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue, threadFactory, handler);
     }
 
-    static TaskThreadPoolExecutor getInstance() {
-        if (pauseThreadPoolExecutor == null) {
-            synchronized (TaskThreadPoolExecutor.class) {
-                if (pauseThreadPoolExecutor == null) {
+    static ThreadPoolExecutor getInstance() {
+        if (threadPoolExecutor == null) {
+            synchronized (ThreadPoolExecutor.class) {
+                if (threadPoolExecutor == null) {
                     // Java 虚拟机 可用的 CPU 数量
                     int availableProcessors = Runtime.getRuntime().availableProcessors();
-                    pauseThreadPoolExecutor = new TaskThreadPoolExecutor(
+                    threadPoolExecutor = new ThreadPoolExecutor(
                             // 核心线程数，即使空闲也存活
                             availableProcessors + 1,
                             // 最大线程数
@@ -69,7 +69,7 @@ class TaskThreadPoolExecutor extends ThreadPoolExecutor {
                             // 保持活性时间单位
                             TimeUnit.SECONDS,
                             // 任务队列模式，这里是有限度队列，
-                            new PriorityBlockingQueue<Runnable>(availableProcessors * 2),
+                            new ArrayBlockingQueue<Runnable>(availableProcessors * 2),
                             // 线程工厂类
                             Executors.defaultThreadFactory(),
                             // 拒绝策略，使用默认的抛出异常
@@ -78,45 +78,31 @@ class TaskThreadPoolExecutor extends ThreadPoolExecutor {
                 }
             }
         }
-        return TaskThreadPoolExecutor.pauseThreadPoolExecutor;
+        return ThreadPoolExecutor.threadPoolExecutor;
     }
 
     @Override
     protected void beforeExecute(Thread t, Runnable r) {
-
         // 默认在后台线程中运行
 //        int defaultThreadPriority = android.os.Process.THREAD_PRIORITY_BACKGROUND;
         int defaultThreadPriority = 5;
 
-        /*if (r instanceof Task) {
-            Task task = (Task) r;
-            defaultThreadPriority = ((Task) r).getLevel();
-            LogUtil.v("Thread[" + t.getName() + "] perform task[" + task.getName() + "].");
-        } else {
-            LogUtil.v("Thread[" + t.getName() + "] perform runnable.");
-        }*/
-
         // Thread 是复用的，减少调度次数
         if (t.getPriority() != defaultThreadPriority) {
-            LogUtil.v(t.getName() + " priority 【" + t.getPriority() + "】 ===> " + "【" + defaultThreadPriority + "】");
+            LogUtil.v("{0} priority{1} ===> defaultThreadPriority{2}",
+                    t.getName(), t.getPriority(), defaultThreadPriority);
             android.os.Process.setThreadPriority(defaultThreadPriority);
         }
     }
 
     @Override
     protected void afterExecute(Runnable r, Throwable t) {
-        // 若执行的是自定义的 Task，获取 Task 指定的 ThreadPriority
-        /*if (r instanceof Task) {
-            Task task = (Task) r;
-            LogUtil.v("Task[" + task.getName() + "] complete.");
-        } else {
-            LogUtil.v("Runnable complete.");
-        }*/
+//        LogUtil.v("ThreadPoolExecutor afterExecute.");
     }
 
     @Override
     protected void terminated() {
-        LogUtil.v("TaskThreadPoolExecutor terminated.");
+//        LogUtil.v("ThreadPoolExecutor terminated.");
     }
 
 
@@ -124,18 +110,18 @@ class TaskThreadPoolExecutor extends ThreadPoolExecutor {
      * @param isNow 是否立马销毁线程池
      */
     static void destroy(boolean isNow) {
-        if (pauseThreadPoolExecutor != null) {
-            synchronized (TaskThreadPoolExecutor.class) {
-                if (pauseThreadPoolExecutor != null) {
+        if (threadPoolExecutor != null) {
+            synchronized (ThreadPoolExecutor.class) {
+                if (threadPoolExecutor != null) {
                     // 立马销毁会返回未执行的任务
                     if (isNow) {
-                        pauseThreadPoolExecutor.shutdownNow();
+                        threadPoolExecutor.shutdownNow();
                     }
                     // 等待执行所有任务后自动销毁
                     else {
-                        pauseThreadPoolExecutor.shutdown();
+                        threadPoolExecutor.shutdown();
                     }
-                    pauseThreadPoolExecutor = null;
+                    threadPoolExecutor = null;
                 }
             }
         }
@@ -144,10 +130,10 @@ class TaskThreadPoolExecutor extends ThreadPoolExecutor {
 
     /**
      * ThreadPoolExecutor 的 PriorityBlockingQueue 支持问题
-     * 由于{@link TaskThreadPoolExecutor}} 采用了 PriorityBlockingQueue 优先级队列，所以提交的 Runnable 需要实现 Comparable 接口
+     * 由于{@link ThreadPoolExecutor}} 采用了 PriorityBlockingQueue 优先级队列，所以提交的 Runnable 需要实现 Comparable 接口
      * 但是，你还是会发现报错：FutureTask cannot be cast to java.lang.Comparable
-     * 是因为调用 {@link TaskThreadPoolExecutor#submit(Runnable)} 方法的时候
-     * 会调用 {@link ThreadPoolExecutor#newTaskFor(Callable)} 方法将 Runnable 转换为 FutureTask，然而 FutureTask 没有并实现 Comparable
+     * 是因为调用 {@link ThreadPoolExecutor#submit(Runnable)} 方法的时候
+     * 会调用 {@link java.util.concurrent.ThreadPoolExecutor#newTaskFor(Callable)} 方法将 Runnable 转换为 FutureTask，然而 FutureTask 没有并实现 Comparable
      * <p>
      * 拓展：FutureTask 也是个 Runnable，运行我们指定的 Runnable 的流程如下
      * FutureTask.run() --> Callable.call() --> MyRunnable.run()
@@ -156,20 +142,23 @@ class TaskThreadPoolExecutor extends ThreadPoolExecutor {
      * 实现类是 RunnableAdapter
      * 3. RunnableAdapter.run() 中 进行了 myRunnable.run() 的操作
      * <p>
-     * 解决办法：继承 {@link FutureTask}类并实现{@link Comparable}接口，重写 {@link ThreadPoolExecutor#newTaskFor(Callable)} 方法
+     * 解决办法：继承 {@link FutureTask}类并实现{@link Comparable}接口，重写 {@link java.util.concurrent.ThreadPoolExecutor#newTaskFor(Callable)} 方法
      * <p>
      * 总结：慎用 ThreadPool.submit()，使用 ThreadPool.execute()。因为后续还会遇到以下问题（正对本项目类）：
      * 1. ComparableFutureTask cannot cast to Task. 报错地址：{@link PriorityBlockingQueue}类的 siftUpComparable() 方法
      * 原因推测：对比排序时转换类别错误
      */
+
     @Override
     protected <T> RunnableFuture<T> newTaskFor(Callable<T> callable) {
-        return new ComparableFutureTask<>(callable);
+//        return new ComparableFutureTask<>(callable);
+        return super.newTaskFor(callable);
     }
 
     @Override
     protected <T> RunnableFuture<T> newTaskFor(Runnable runnable, T value) {
-        return new ComparableFutureTask<>(runnable, value);
+//        return new ComparableFutureTask<>(runnable, value);
+        return super.newTaskFor(runnable, value);
     }
 
     private class ComparableFutureTask<V> extends FutureTask<V> implements Comparable<ComparableFutureTask<V>> {
@@ -192,11 +181,13 @@ class TaskThreadPoolExecutor extends ThreadPoolExecutor {
                 return 0;
             }
             // 比较优先度。只关注我们定义的任务 Task
-            if (this.object != null) {
+           /*
+           if (this.object != null) {
                 if (this.object instanceof Task && other.object instanceof Task) {
                     return ((Task) this.object).compareTo((Task) other.object);
                 }
             }
+            */
             return 0;
         }
     }
