@@ -30,8 +30,8 @@ import java.util.List;
  * <p>
  * 支持：PointTask完成后自动销毁
  * 支持：失败重新运行，在 {@link RunPoint#run()} 方法最后进行标记 {@link RunPoint#setFlag(int)}
- * 支持：暂停、继续、取消等操作。 TODO -- 可以利用 allPointTask
- * 支持：网络任务断网保留，网络状态变化后重新拉取。 TODO -- 可以利用 allPointTask
+ * TODO 支持：暂停、继续、取消等操作，回调处处理
+ * TODO 支持：网络任务断网保留，网络状态变化后重新拉取
  */
 public final class MeshTask {
 
@@ -192,5 +192,9 @@ public final class MeshTask {
     public void execute() {
         MeshTask.this.isStarted = true;
         ThreadPoolExecutor.getInstance().submit(MeshTask.this.topPointTask);
+    }
+
+    public void pause() {
+
     }
 }
