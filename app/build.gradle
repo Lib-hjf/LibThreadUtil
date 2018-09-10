@@ -1,13 +1,15 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 26
+    compileSdkVersion rootProject.compile_sdk_version as int
+    buildToolsVersion rootProject.build_tools_version
+
     defaultConfig {
-        applicationId "com.thread.test"
-        minSdkVersion 19
-        targetSdkVersion 26
-        versionCode 1
-        versionName "1.0"
+        applicationId rootProject.application_id
+        minSdkVersion rootProject.min_sdk_version as int
+        targetSdkVersion rootProject.target_sdk_version as int
+        versionCode rootProject.version_code as int
+        versionName rootProject.version_name
     }
 }
 
